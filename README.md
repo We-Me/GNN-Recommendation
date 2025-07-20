@@ -1,4 +1,4 @@
-# GNN-Recommendation-System
+# GNN-Recommendation
 
 本项目实现了一个基于 LightGCN 的图神经网络推荐系统。
 支持对评分数据进行预处理、训练，并支持配置文件灵活配置参数。
