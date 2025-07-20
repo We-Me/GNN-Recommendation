@@ -1,0 +1,42 @@
+train_cfg:
+  device: "cuda:0"
+  epochs: 200
+  batch_size: 512
+  reg_radio: 0.00001
+  eval_freq: 20
+  topk: 20
+  save_dir: "../ckpts/lightgcn"
+
+dataset_cfg:
+  user_key: "userID"
+  item_key: "artistID"
+  rate_key: "weight"
+  edge_key: null
+  timestamp_key: null
+  data_dir: "../datas/hetrec2011-lastfm-2k"
+  user_item_file: null
+  user_item_rate_file: "user_artists.dat"
+  user_item_timestamp_file: null
+  user_item_rate_timestamp_file: null
+  user_item_edge_timestamp_file: null
+  load_method: "user_item_rate"
+  test_size: 0.2
+  seed: 42
+
+model_cfg:
+  class: models.LightGCN.LightGCN
+  args:
+    embed_dim: 256
+    num_layers: 3
+    dropout: 0.01
+
+optimizer_cfg:
+  class: torch.optim.Adam
+  args:
+    lr: 0.001
+
+scheduler_cfg:
+  class: torch.optim.lr_scheduler.CosineAnnealingLR
+  args:
+    T_max: 200
+    eta_min: 0.000001
