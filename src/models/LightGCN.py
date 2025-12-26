@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from .utlis import slice_sparse_rows, sparse_dropout
+from .utils import slice_sparse_rows, sparse_dropout
 
 
 class LightGCN(nn.Module):
@@ -19,7 +19,6 @@ class LightGCN(nn.Module):
         self.num_items = num_items
         self.embed_dim = embed_dim
         self.num_layers = num_layers
-        self.norm_adj = norm_adj
         self.num_fold = num_fold
         self.dropout_flag = dropout_flag
         self.dropout_rate = dropout_rate

@@ -9,7 +9,7 @@ class BPRLoss(object):
     def bpr_loss(u_emb: torch.Tensor, pos_emb: torch.Tensor, neg_emb: torch.Tensor) -> torch.Tensor:
         pos_scores = (u_emb * pos_emb).sum(dim=-1)
         neg_scores = (u_emb * neg_emb).sum(dim=-1)
-        return -torch.log(torch.sigmoid(pos_scores - neg_scores) + 1e-8).mean()
+        return torch.mean(-torch.nn.functional.logsigmoid(pos_scores - neg_scores))
 
     @staticmethod
     def l2_reg(*tensors: torch.Tensor) -> torch.Tensor:

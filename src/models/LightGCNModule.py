@@ -1,9 +1,9 @@
 import torch
 import pytorch_lightning as pl
 
-from loss import BPRLoss
-from models import LightGCN
-from metrics.metrics import Metric
+from src.loss.BPRLoss import BPRLoss
+from src.models.LightGCN import LightGCN
+from src.metrics.metrics import Metric
 
 class LightGCNModule(pl.LightningModule):
     def __init__(
@@ -24,6 +24,7 @@ class LightGCNModule(pl.LightningModule):
         self.optim_cfg = optim_cfg
         self.num_users = num_users
         self.num_items = num_items
+        self.num_fold = model_cfg.get("num_fold", 100)
         self.train_interactions = train_interactions
         self.val_gt = val_ground_truth
         self.test_gt = test_ground_truth
@@ -53,7 +54,7 @@ class LightGCNModule(pl.LightningModule):
         if name == "adam":
             opt = torch.optim.Adam(self.parameters(), lr=lr, weight_decay=weight_decay)
         elif name == "adamw":
-            opt = torch.optim.AdamW(self.parameters(), **self.optim_cfg["optim_params"])
+            opt = torch.optim.AdamW(self.parameters(), lr=lr, weight_decay=weight_decay)
         else:
             raise ValueError(f"Unsupported optimizer: {name}")
 
@@ -70,9 +71,15 @@ class LightGCNModule(pl.LightningModule):
         loss = self.loss.get(u_emb, pos_emb, neg_emb)
         self.log("train/loss", loss, prog_bar=True, on_step=True, on_epoch=True, batch_size=u.shape[0])
         return loss
-
+    
+    def validation_step(self, batch, batch_idx):
+        return None
+    
     def on_validation_epoch_end(self):
         self._evaluate(split="val")
+
+    def test_step(self, batch, batch_idx):
+        return None
 
     def on_test_epoch_end(self):
         self._evaluate(split="test")

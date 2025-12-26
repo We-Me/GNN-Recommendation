@@ -29,8 +29,8 @@ class RecDataModule(pl.LightningDataModule):
         self.train_ds: Optional[BPRDataset] = None
         self.norm_adj: Optional[torch.Tensor] = None
         self.train_interaction_matrix: Optional[torch.Tensor] = None
-        self.val_gt = Optional[dict] = None
-        self.test_gt = Optional[dict] = None
+        self.val_gt: Optional[dict] = None
+        self.test_gt: Optional[dict] = None
 
     def setup(self, stage: Optional[str] = None):
         meta_path = os.path.join(self.cfg.processed_dir, "meta.json")

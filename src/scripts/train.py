@@ -6,12 +6,14 @@ from typing import Any, Dict, Optional
 import torch
 import pytorch_lightning as pl
 import yaml
-from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from pytorch_lightning.loggers import TensorBoardLogger
 
-from data.RecDataModule import DataConfig, RecDataModule
-from models import LightGCNModule
-from utils.seed import seed_everything_strict
+from src.data.RecDataModule import DataConfig, RecDataModule
+from src.models.LightGCNModule import LightGCNModule
+from src.utils.seed import seed_everything_strict
+
+torch.set_float32_matmul_precision("high")
 
 
 def load_maybe_config(path: Optional[str]) -> dict:
@@ -32,7 +34,6 @@ def load_maybe_config(path: Optional[str]) -> dict:
 def build_cli_override(args: argparse.Namespace) -> dict:
     return {
         "seed": args.seed,
-        "ckpt_root": args.ckpt_root,
         "data": {
             "processed_dir": args.processed_dir,
             "batch_size": args.batch_size,
@@ -60,6 +61,9 @@ def build_cli_override(args: argparse.Namespace) -> dict:
             "monitor": args.monitor,
             "precision": args.precision,
             "log_every_n_steps": args.log_every_n_steps,
+            "ckpt_root": args.ckpt_root,
+            "accelerator": args.accelerator,
+            "devices": args.devices,
         },
     }
 
@@ -100,7 +104,6 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--config", type=str, default=None, help="Optional YAML config path")
 
     p.add_argument("--seed", type=int, default=None)
-    p.add_argument("--ckpt-root", type=str, default=None)
     
     p.add_argument("--processed-dir", type=str, default=None)
     p.add_argument("--batch-size", type=int, default=None)
@@ -120,11 +123,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--weight-decay", type=float, default=None)
 
     p.add_argument("--max-epochs", type=int, default=None)
+    p.add_argument("--monitor", type=str, default=None)
     p.add_argument("--check-val-every-n-epoch", type=int, default=None)
-    p.add_argument("--every-n-epochs", type=int, default=None, help="Periodic checkpoint every N epochs")
-    p.add_argument("--monitor", type=str, default=None, help='Best checkpoint monitor metric, default "val/Recall@20"')
+    p.add_argument("--every-n-epochs", type=int, default=None)
     p.add_argument("--precision", type=str, default=None, help='e.g. "32-true", "16-mixed"')
     p.add_argument("--log-every-n-steps", type=int, default=None)
+    p.add_argument("--ckpt-root", type=str, default=None)
+    p.add_argument("--accelerator", type=str, default=None)
+    p.add_argument("--devices", type=str, default=None)
 
     return p.parse_args()
 
@@ -138,10 +144,6 @@ def parse_topk(s: Optional[str]) -> Optional[list[int]]:
 def train(cfg: Dict[str, Any]) -> None:
     seed = int(cfg.get("seed", 42))
     seed_everything_strict(seed)
-
-    time_str = datetime.now().strftime("%Y%m%d_%H%M")
-    save_path = os.path.join(cfg.get("save_root", "./ckpt"), f"train_{time_str}")
-    os.makedirs(save_path, exist_ok=True)
 
     # ----- datamodule -----
     data_cfg_dict = cfg.get("data", {})
@@ -192,9 +194,14 @@ def train(cfg: Dict[str, Any]) -> None:
         test_ground_truth=test_gt,
     )
 
-    # ----- callbacks (best + periodic) -----
-    monitor = str(cfg.get("trainer", {}).get("monitor", "val/Recall@20"))
-    every_n_epochs = int(cfg.get("trainer", {}).get("every_n_epochs", 10))
+    # ----- trainer -----
+    trainer_cfg = cfg.get("trainer", {})
+    time_str = datetime.now().strftime("%Y%m%d_%H%M")
+    save_path = os.path.join(trainer_cfg.get("save_root", "./ckpts"), f"train_{time_str}")
+    os.makedirs(save_path, exist_ok=True)
+
+    monitor = str(trainer_cfg.get("monitor", "val/Recall@20"))
+    every_n_epochs = int(trainer_cfg.get("every_n_epochs", 10))
 
     best_ckpt = ModelCheckpoint(
         dirpath=save_path,
@@ -213,17 +220,19 @@ def train(cfg: Dict[str, Any]) -> None:
         save_last=True,
     )
 
-    lr_monitor = LearningRateMonitor(logging_interval="step")
+    early_stop = EarlyStopping(
+        monitor=monitor,
+        mode="max",
+        patience=3,
+        min_delta=0.001
+    )
 
-    # ----- logger -----
     logger = TensorBoardLogger(save_dir=os.path.join(save_path, "logs"), name="tb")
-
-    # ----- trainer -----
-    trainer_cfg = cfg.get("trainer", {})
+    
     trainer = pl.Trainer(
         max_epochs=int(trainer_cfg.get("max_epochs", 200)),
         check_val_every_n_epoch=int(trainer_cfg.get("check_val_every_n_epoch", 5)),
-        callbacks=[best_ckpt, periodic_ckpt, lr_monitor],
+        callbacks=[best_ckpt, periodic_ckpt, early_stop],
         logger=logger,
         enable_checkpointing=True,
         accelerator=str(trainer_cfg.get("accelerator", "auto")),

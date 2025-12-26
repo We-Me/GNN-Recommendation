@@ -94,6 +94,9 @@ class RatingPreprocessor:
     @staticmethod
     def _read_raw_triplets(cfg: RawConfig) -> List[Tuple[str, str, float]]:
         out: List[Tuple[str, str, float]] = []
+        max_parts = max(cfg.user_col, cfg.item_col, cfg.rating_col) \
+            if cfg.rating_col else max(cfg.user_col, cfg.item_col)
+        
         with open(cfg.path, "r", encoding="utf-8") as f:
             if cfg.has_header:
                 next(f, None)
@@ -103,14 +106,19 @@ class RatingPreprocessor:
                 if not line:
                     continue
                 parts = line.split(cfg.sep)
-                if len(parts) <= max(cfg.user_col, cfg.item_col, cfg.rating_col):
+                if len(parts) <= max_parts:
                     continue
                 u = parts[cfg.user_col]
                 it = parts[cfg.item_col]
-                try:
-                    r = float(parts[cfg.rating_col])
-                except ValueError:
-                    continue
+
+                if cfg.rating_col:
+                    try:
+                        r = float(parts[cfg.rating_col])
+                    except ValueError:
+                        continue
+                else:
+                    r = 1.0
+                    
                 out.append((u, it, r))
 
         return out
@@ -118,6 +126,8 @@ class RatingPreprocessor:
     def _factorize_triplets(self, triplets: List[Tuple[str, str, float]]):
         self.user2idx = {}
         self.item2idx = {}
+        self.idx2user = {}
+        self.idx2item = {}
 
         u_idx: List[int] = []
         i_idx: List[int] = []

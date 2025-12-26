@@ -2,7 +2,7 @@ import argparse
 import os
 from typing import Optional
 
-from data.preprocess import RatingPreprocessor, RawConfig, SplitConfig
+from src.data.preprocess import RatingPreprocessor, RawConfig, SplitConfig
 
 try:
     import yaml  # pip install pyyaml
@@ -114,7 +114,7 @@ def main():
     raw_cfg, split_cfg, processed_dir = validate_and_instantiate(merged)
 
     proc = RatingPreprocessor(raw_cfg, split_cfg, processed_dir)
-    meta = proc.run()
+    _ = proc.run()
 
 
 if __name__ == "__main__":
