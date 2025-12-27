@@ -23,11 +23,11 @@ optim:
 train:
   seed: 42
   ckpt_root: "./ckpts/"
-  max_epochs: 200
+  max_epochs: 1000
   monitor: "val/Recall@20"
   early_stop_delta: 0.0
   early_stop_patience: 3
-  save_epoch_interval: 20
-  val_epoch_interval: 5
+  save_epoch_interval: 100
+  val_epoch_interval: 20
   accelerator: "auto"
   devices: "auto"
