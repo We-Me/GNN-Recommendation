@@ -1,0 +1,16 @@
+processed_dir: "./datas/gowalla-processed/"
+
+raw:
+  path: "./datas/gowalla/Gowalla_edges.txt"
+  sep: "\t"
+  has_header: false
+  user_col: 0
+  item_col: 1
+  rating_col: null
+
+split:
+  seed: 42
+  train_ratio: 0.6
+  val_ratio: 0.2
+  test_ratio: 0.2
+  min_user_interactions: 10
