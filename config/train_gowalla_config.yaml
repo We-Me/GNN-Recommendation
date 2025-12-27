@@ -1,33 +1,33 @@
-seed: 42
-
 data:
+  dataset: "gowalla"
   processed_dir: "./datas/gowalla-processed"
-  batch_size: 12800
-  num_workers: 32
+  batch_size: 2048
+  num_workers: 16
   num_negatives: 1
 
 model:
-  embed_dim: 128
+  model_name: "lightgcn"
+  embed_dim: 64
   num_layers: 3
-  num_fold: 200
+  num_fold: 100
   dropout_flag: true
-  dropout_rate: 0.1
+  dropout_rate: 0.05
   reg_ratio: 0.001
-  user_batch_size: 1024
   topk: [10, 20]
 
 optim:
   optimizer: "adam"
-  lr: 0.0001
+  lr: 0.001
   weight_decay: 1e-6
 
-trainer:
-  max_epochs: 200
-  check_val_every_n_epoch: 5
-  every_n_epochs: 10
-  monitor: "val/Recall@20"
-  precision: "32-true"
+train:
+  seed: 42
   ckpt_root: "./ckpts/"
-  log_every_n_steps: 50
+  max_epochs: 200
+  monitor: "val/Recall@20"
+  early_stop_delta: 0.0
+  early_stop_patience: 3
+  save_epoch_interval: 20
+  val_epoch_interval: 5
   accelerator: "auto"
   devices: "auto"

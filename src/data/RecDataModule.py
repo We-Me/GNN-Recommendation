@@ -13,6 +13,7 @@ from .BPRDataset import BPRDataset
 
 @dataclass
 class DataConfig:
+    dataset: str
     processed_dir: str
     batch_size: int
     num_workers: int

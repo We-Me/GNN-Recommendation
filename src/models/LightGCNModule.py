@@ -70,7 +70,7 @@ class LightGCNModule(pl.LightningModule):
         neg_emb = item_emb[neg_i]
 
         loss = self.loss.get(u_emb, pos_emb, neg_emb)
-        self.log("train/loss", loss, prog_bar=True, on_step=True, on_epoch=True, batch_size=u.shape[0])
+        self.log("train/loss", loss, prog_bar=True, on_step=False, on_epoch=True, batch_size=u.shape[0])
         return loss
     
     def validation_step(self, batch, batch_idx):
@@ -120,7 +120,7 @@ class LightGCNModule(pl.LightningModule):
             p = Metric.precision(hits, num_users, k)
             n = Metric.ndcg(gt, rec, k)
 
-            self.log(f"{split}/Recall@{k}", r, on_step=False, on_epoch=True, prog_bar=(split == "val" and k == 20), sync_dist=True)
+            self.log(f"{split}/Recall@{k}", r, on_step=False, on_epoch=True, prog_bar=(split=="val" and k==20), sync_dist=True)
             self.log(f"{split}/Precision@{k}", p, on_step=False, on_epoch=True, prog_bar=False, sync_dist=True)
             self.log(f"{split}/NDCG@{k}", n, on_step=False, on_epoch=True, prog_bar=False, sync_dist=True)
 

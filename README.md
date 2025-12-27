@@ -142,7 +142,15 @@ python src/scripts/train.py \
 
 | Metric             | Value               |
 |--------------------|---------------------|
-| test/Recall@20     | 0.  |
+| test/Recall@20     | 0.15345323085784912 |
+| test/NDCG@20       | 0.18875136971473694 |
+| test/Precision@20  | 0.13978134095668793 |
+
+在 config/gowalla.yaml，config/train_gowalla_config.yaml 配置下，MovieLens 25M 数据集上测试结果如下：
+
+| Metric             | Value               |
+|--------------------|---------------------|
+| test/Recall@20     | 0. |
 | test/NDCG@20       | 0. |
 | test/Precision@20  | 0. |
 
