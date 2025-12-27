@@ -1,7 +1,7 @@
-processed_dir: "./datas/movieLens-processed/"
+processed_dir: "./datas/movieLens-100k-processed/"
 
 raw:
-  path: "./datas/MovieLens 25M Dataset/ratings.csv"
+  path: "./datas/ml-latest-small/ratings.csv"
   sep: ","
   has_header: true
   user_col: 0

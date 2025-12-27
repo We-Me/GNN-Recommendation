@@ -25,6 +25,7 @@ class LightGCNModule(pl.LightningModule):
         self.num_users = num_users
         self.num_items = num_items
         self.num_fold = model_cfg.get("num_fold", 100)
+        self.user_batch_size = model_cfg.get("user_batch_size", 1024)
         self.train_interactions = train_interactions
         self.val_gt = val_ground_truth
         self.test_gt = test_ground_truth
@@ -90,46 +91,38 @@ class LightGCNModule(pl.LightningModule):
         if not gt:
             return
 
-        user_emb, item_emb = self()
-        scores = user_emb @ item_emb.T  # [U, I]
-        scores = self._mask_train_seen(scores, self.train_interactions)
-
+        user_emb, item_emb = self()  # [U, D], [I, D]
+        device = user_emb.device
         max_k = max(self.topk)
-        _, top_idx = torch.topk(scores, k=max_k, dim=1)
-        top_idx = top_idx.cpu().tolist()
-        rec = {u: top_idx[u] for u in range(len(top_idx))}
-
         num_users = user_emb.size(0)
+
+        item_emb_t = item_emb.t()  # [D, I]
+
+        rec: dict[int, list[int]] = {}
+        for start in range(0, num_users, self.user_batch_size):
+            end = min(start + self.user_batch_size, num_users)
+            u = user_emb[start:end]                # [B, D]
+            scores = u @ item_emb_t                # [B, I]
+
+            scores = self._mask_train_seen_batch(scores, self.train_interactions, user_offset=start)
+
+            _, top_idx = torch.topk(scores, k=max_k, dim=1)  # [B, max_k]
+            top_idx = top_idx.cpu().tolist()
+
+            for i, items in enumerate(top_idx):
+                rec[start + i] = items
+
+            del scores, top_idx
+
         for k in self.topk:
             hits = Metric.hits(gt, rec, k)
             r = Metric.recall(gt, hits)
             p = Metric.precision(hits, num_users, k)
             n = Metric.ndcg(gt, rec, k)
 
-            self.log(
-                f"{split}/Recall@{k}",
-                r,
-                on_step=False,
-                on_epoch=True,
-                prog_bar=(split == "val" and k == 20),
-                sync_dist=True,
-            )
-            self.log(
-                f"{split}/Precision@{k}",
-                p,
-                on_step=False,
-                on_epoch=True,
-                prog_bar=False,
-                sync_dist=True,
-            )
-            self.log(
-                f"{split}/NDCG@{k}",
-                n,
-                on_step=False,
-                on_epoch=True,
-                prog_bar=False,
-                sync_dist=True,
-            )
+            self.log(f"{split}/Recall@{k}", r, on_step=False, on_epoch=True, prog_bar=(split == "val" and k == 20), sync_dist=True)
+            self.log(f"{split}/Precision@{k}", p, on_step=False, on_epoch=True, prog_bar=False, sync_dist=True)
+            self.log(f"{split}/NDCG@{k}", n, on_step=False, on_epoch=True, prog_bar=False, sync_dist=True)
 
     @staticmethod
     def _mask_train_seen(scores: torch.Tensor, train_interactions: torch.Tensor) -> torch.Tensor:
@@ -137,4 +130,22 @@ class LightGCNModule(pl.LightningModule):
         u = train_interactions.indices()[0]
         i = train_interactions.indices()[1]
         scores[u, i] = float("-inf")
+        return scores
+
+    @staticmethod
+    def _mask_train_seen_batch(scores: torch.Tensor, train_interactions: torch.Tensor, user_offset: int) -> torch.Tensor:
+        ti = train_interactions.coalesce()
+        u = ti.indices()[0]
+        i = ti.indices()[1]
+
+        start = user_offset
+        end = user_offset + scores.size(0)
+
+        # 选出落在本 batch 用户范围内的交互
+        m = (u >= start) & (u < end)
+        if m.any():
+            u_local = u[m] - start  # 映射到 batch 内行号 [0..B-1]
+            i_sel = i[m]
+            scores[u_local, i_sel] = float("-inf")
+
         return scores

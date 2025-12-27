@@ -20,10 +20,10 @@ class LightGCN(nn.Module):
         self.embed_dim = embed_dim
         self.num_layers = num_layers
         self.num_fold = num_fold
+        self.norm_adj = norm_adj
         self.dropout_flag = dropout_flag
         self.dropout_rate = dropout_rate
 
-        self.register_buffer('norm_adj', norm_adj)
         self.embedding_dict = nn.ParameterDict({
             "user_embedding": nn.Parameter(torch.empty(num_users, embed_dim)),
             "item_embedding": nn.Parameter(torch.empty(num_items, embed_dim))
@@ -37,8 +37,9 @@ class LightGCN(nn.Module):
         self.embedding_dict["user_embedding"].data.copy_(pretrain_user_embedding)
         self.embedding_dict["item_embedding"].data.copy_(pretrain_item_embedding)
 
-    def _split_A_hat_node_dropout(self, X):
+    def _split_A_hat_node_dropout(self, X: torch.Tensor):
         A_fold_hat = []
+        dev = X.device
         num_nodes = self.num_users + self.num_items
         fold_len = num_nodes // self.num_fold
 
@@ -47,16 +48,27 @@ class LightGCN(nn.Module):
             end = num_nodes if i_fold == self.num_fold - 1 else (i_fold + 1) * fold_len
 
             temp = slice_sparse_rows(X, start, end)
+            if temp.device != dev:
+                temp = temp.to(dev)
+
             if self.dropout_flag and self.training:
                 temp = sparse_dropout(temp, self.dropout_rate)
+                if temp.device != dev:
+                    temp = temp.to(dev)
+
             A_fold_hat.append(temp)
-        
+
         return A_fold_hat
 
     def forward(self):
-        A_fold_hat = self._split_A_hat_node_dropout(self.norm_adj)
-
         ego_embeddings = torch.cat([self.embedding_dict["user_embedding"], self.embedding_dict["item_embedding"]], dim=0)
+        dev = ego_embeddings.device
+
+        A = self.norm_adj
+        if A.device != dev:
+            A = A.to(dev)
+        A_fold_hat = self._split_A_hat_node_dropout(A)
+
         all_embeddings = [ego_embeddings]
 
         for _ in range(self.num_layers):

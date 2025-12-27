@@ -130,6 +130,22 @@ python src/scripts/train.py \
 | test/NDCG@20       | 0.21430368721485138 |
 | test/Precision@20  | 0.10985729098320007 |
 
+在 config/movieLens_100k.yaml，config/train_movielens_100k_config.yaml 配置下，MovieLens 100k 数据集上测试结果如下：
+
+| Metric             | Value               |
+|--------------------|---------------------|
+| test/Recall@20     | 0.1645771861076355  |
+| test/NDCG@20       | 0.20150409638881683 |
+| test/Precision@20  | 0.15057377517223358 |
+
+在 config/movieLens_25m.yaml，config/train_movielens_25m_config.yaml 配置下，MovieLens 25M 数据集上测试结果如下：
+
+| Metric             | Value               |
+|--------------------|---------------------|
+| test/Recall@20     | 0.  |
+| test/NDCG@20       | 0. |
+| test/Precision@20  | 0. |
+
 ## License
 
 本项目采用 MIT License
