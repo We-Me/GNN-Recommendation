@@ -126,25 +126,17 @@ python src/scripts/train.py \
 
 | Metric             | Value               |
 |--------------------|---------------------|
-| test/Recall@20     | 0. |
-| test/NDCG@20       | 0. |
-| test/Precision@20  | 0. |
+| test/Recall@20     | 0.22411783039569855 |
+| test/NDCG@20       | 0.21282416582107544 |
+| test/Precision@20  | 0.10959302634000778 |
 
 [MovieLens 100K](https://www.kaggle.com/datasets/prajitdatta/movielens-100k-dataset)：
 
 | Metric             | Value               |
 |--------------------|---------------------|
-| test/Recall@20     | 0. |
-| test/NDCG@20       | 0. |
-| test/Precision@20  | 0. |
-
-[Gowalla Dataset](https://www.kaggle.com/datasets/hunhnguynphc/gowalla-dataset)：
-
-| Metric             | Value               |
-|--------------------|---------------------|
-| test/Recall@20     | 0. |
-| test/NDCG@20       | 0. |
-| test/Precision@20  | 0. |
+| test/Recall@20     | 0.18811164796352386 |
+| test/NDCG@20       | 0.22380121052265167 |
+| test/Precision@20  | 0.16590164601802826 |
 
 ## License
 

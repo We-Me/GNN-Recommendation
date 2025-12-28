@@ -12,7 +12,7 @@ model:
   num_fold: 100
   dropout_flag: true
   dropout_rate: 0.05
-  reg_ratio: 0.001
+  reg_ratio: 0.0001
   topk: [10, 20]
 
 optim:

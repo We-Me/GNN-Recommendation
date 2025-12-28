@@ -69,8 +69,10 @@ class LightGCNModule(pl.LightningModule):
         pos_emb = item_emb[pos_i]
         neg_emb = item_emb[neg_i]
 
-        loss = self.loss.get(u_emb, pos_emb, neg_emb)
+        loss, mf, emb = self.loss.get(u_emb, pos_emb, neg_emb)
         self.log("train/loss", loss, prog_bar=True, on_step=False, on_epoch=True, batch_size=u.shape[0])
+        self.log("train/mf", mf, prog_bar=True, on_step=False, on_epoch=True, batch_size=u.shape[0])
+        self.log("train/emb", emb, prog_bar=True, on_step=False, on_epoch=True, batch_size=u.shape[0])
         return loss
     
     def validation_step(self, batch, batch_idx):
